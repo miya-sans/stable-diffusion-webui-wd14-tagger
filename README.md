@@ -43,6 +43,10 @@ After migrating from another Tagger to this one, you can remove them using `pip 
 
 ## Changelog
 
+### 2026/7/10
+
+- Fix for a missing implementation of the `image` field in `TaggerInterrogateRequest`
+
 ### 2026/5/30
 
 - Handle missing use_cpu option in Forge Neo

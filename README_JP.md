@@ -43,6 +43,10 @@ Taggerのforkをまた増やしてしまい、申し訳ありません。<BR>
 
 ## 更新履歴
 
+### 2026/7/11
+
+- `TaggerInterrogateRequest`への`image`フィールドの実装漏れの修正
+
 ### 2026/5/30
 
 - Forge Neoにおけるuse_cpuオプションの削除に対応
