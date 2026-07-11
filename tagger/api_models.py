@@ -9,6 +9,10 @@ from pydantic import BaseModel, Field
 
 class TaggerInterrogateRequest(pydantic.BaseModel):
     """Interrogate request model"""
+    image: str = Field(
+        title='Image',
+        description='Base64-encoded input image.',
+    )
     model: str = Field(
         title='Model',
         description='The interrogate model used.',
