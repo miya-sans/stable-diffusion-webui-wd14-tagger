@@ -4,6 +4,7 @@ from pathlib import Path
 import io
 import json
 import inspect
+import dataclasses
 from re import match as re_match
 from platform import system, uname
 from typing import Tuple, List, Dict, Callable
@@ -12,9 +13,13 @@ from PIL import Image, UnidentifiedImageError
 from numpy import asarray, float32, expand_dims, exp
 from tqdm import tqdm
 from huggingface_hub import hf_hub_download
+try:
+    from huggingface_hub.errors import GatedRepoError
+except ImportError:  # huggingface_hub < 0.24
+    from huggingface_hub.utils import GatedRepoError
 
 from modules.paths import extensions_dir
-from modules import shared
+from modules import shared, devices
 from tagger import settings  # pylint: disable=import-error
 from tagger.uiset import QData, IOData  # pylint: disable=import-error
 from . import dbimutils  # pylint: disable=import-error # noqa
@@ -42,6 +47,20 @@ else:
     TF_DEVICE_NAME = '/gpu:0'
 
 print(f'== WD14 tagger {TF_DEVICE_NAME}, {uname()} ==')
+
+
+def get_torch_device():
+    """ torch device for the timm interrogators, chosen as above """
+    import torch  # pylint: disable=import-outside-toplevel
+    if TF_DEVICE_NAME.startswith('/cpu'):
+        return torch.device('cpu')
+    if shared.cmd_opts.additional_device_ids is not None:
+        # gpu:<nr>
+        return torch.device(f'cuda:{TF_DEVICE_NAME.split(":")[1]}')
+    device = getattr(devices, 'device_interrogate', None)
+    if device is None:
+        device = devices.get_optimal_device()
+    return device
 
 
 class Interrogator:
@@ -498,6 +517,128 @@ class MLDanbooruInterrogator(Interrogator):
 
         tags = {tag: float(conf) for tag, conf in zip(self.tags, y.flatten())}
         return {}, tags
+
+
+class AnimeTimmInterrogator(Interrogator):
+    """ Interrogator for the timm (PyTorch) models of animetimm, see
+    https://huggingface.co/animetimm """
+    def __init__(
+        self,
+        name: str,
+        repo_id: str,
+        model_path='model.safetensors',
+        tags_path='selected_tags.csv',
+    ) -> None:
+        super().__init__(name)
+        self.repo_id = repo_id
+        self.model_path = model_path
+        self.tags_path = tags_path
+        self.model = None
+        self.tags = None
+        self.rating_categories = None
+        self.transform = None
+        self.device = None
+
+    def download(self) -> Dict[str, str]:
+        print(f"Loading {self.name} model file from {self.repo_id}")
+        cache = getattr(shared.opts, 'tagger_hf_cache_dir', Its.hf_cache)
+        # animetimm repositories are gated. None falls back to the HF_TOKEN
+        # environment variable or a token saved by `hf auth login`
+        token = getattr(shared.opts, 'tagger_hf_token', '') or None
+        files = {
+            'config': 'config.json',
+            'preprocess': 'preprocess.json',
+            'categories': 'categories.json',
+            'tags': self.tags_path,
+            'model': self.model_path,
+        }
+        try:
+            return {
+                key: hf_hub_download(repo_id=self.repo_id, filename=filename,
+                                     cache_dir=cache, token=token)
+                for key, filename in files.items()
+            }
+        except GatedRepoError as err:
+            raise RuntimeError(
+                f'{self.repo_id} is a gated model. Log in to Hugging Face, '
+                f'accept its terms at https://huggingface.co/{self.repo_id} '
+                'and set an access token in Settings > Tagger, or in the '
+                'HF_TOKEN environment variable.') from err
+
+    def load(self) -> None:
+        paths = self.download()
+
+        import timm  # pylint: disable=import-outside-toplevel
+        from timm.models import PretrainedCfg  # pylint: disable=C0415
+        from safetensors.torch import load_file  # pylint: disable=C0415
+
+        with open(paths['config'], 'r', encoding='utf-8') as filen:
+            config = json.load(filen)
+
+        # build the model as timm does for 'hf-hub:<repo_id>', but from the
+        # files downloaded above. Unknown keys would fail in older timm.
+        known = {field.name for field in dataclasses.fields(PretrainedCfg)}
+        pretrained_cfg = {k: v for k, v in config['pretrained_cfg'].items()
+                          if k in known}
+        model = timm.create_model(
+            config['architecture'],
+            pretrained=False,
+            pretrained_cfg=pretrained_cfg,
+            num_classes=config['num_classes'],
+            **config.get('model_args', {})
+        )
+        model.load_state_dict(load_file(paths['model']))
+        self.device = get_torch_device()
+        self.model = model.to(self.device).eval()
+        print(f'Loaded {self.name} model from {self.repo_id} on '
+              f'{self.device}')
+
+        with open(paths['preprocess'], 'r', encoding='utf-8') as filen:
+            self.transform = dbimutils.make_transforms(json.load(filen)['test'])
+
+        with open(paths['categories'], 'r', encoding='utf-8') as filen:
+            self.rating_categories = [c['category'] for c in json.load(filen)
+                                      if c['name'] == 'rating']
+
+        # tags such as "null" or "nan" are not missing values
+        self.tags = read_csv(paths['tags'], keep_default_na=False)
+
+    def unload(self) -> bool:
+        unloaded = super().unload()
+        if unloaded:
+            devices.torch_gc()
+        return unloaded
+
+    def interrogate(
+        self,
+        image: Image
+    ) -> Tuple[
+        Dict[str, float],  # rating confidences
+        Dict[str, float]  # tag confidences
+    ]:
+        # init model
+        if self.model is None:
+            self.load()
+
+        import torch  # pylint: disable=import-outside-toplevel
+
+        # alpha to white, then pad to a square and normalize as the model
+        # was trained
+        image = dbimutils.fill_transparent(image)
+        x = torch.from_numpy(self.transform(image)).unsqueeze(0)
+
+        with torch.no_grad():
+            logits = self.model(x.to(self.device))
+        confidences = torch.sigmoid(logits)[0].float().cpu().numpy()
+
+        names = self.tags['name'].values
+        is_rating = self.tags['category'].isin(self.rating_categories).values
+
+        ratings = dict(zip(names[is_rating],
+                           confidences[is_rating].tolist()))
+        tags = dict(zip(names[~is_rating], confidences[~is_rating].tolist()))
+
+        return ratings, tags
 
 
 class Z3DInterrogator(Interrogator):

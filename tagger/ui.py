@@ -423,11 +423,8 @@ def on_ui_tabs():
                                     gr.Dropdown,
                                     label='Interrogator',
                                     choices=interrogator_names,
-                                    value=(
-                                        None
-                                        if len(interrogator_names) < 1 else
-                                        interrogator_names[-1]
-                                    )
+                                    value=utils.interrogators[
+                                        utils.DEFAULT_INTERROGATOR].name
                                 )
 
                                 ui.create_refresh_button(

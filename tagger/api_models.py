@@ -6,6 +6,8 @@ from typing import List, Dict
 from modules.api import models as sd_models  # pylint: disable=E0401
 from pydantic import BaseModel, Field
 
+from tagger.utils import DEFAULT_INTERROGATOR  # pylint: disable=E0401
+
 
 class TaggerInterrogateRequest(pydantic.BaseModel):
     """Interrogate request model"""
@@ -16,6 +18,7 @@ class TaggerInterrogateRequest(pydantic.BaseModel):
     model: str = Field(
         title='Model',
         description='The interrogate model used.',
+        default=DEFAULT_INTERROGATOR,
     )
     threshold: float = Field(
         title='Threshold',
