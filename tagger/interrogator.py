@@ -540,11 +540,6 @@ class AnimeTimmInterrogator(Interrogator):
         self.device = None
 
     def download(self) -> Dict[str, str]:
-        print(f"Loading {self.name} model file from {self.repo_id}")
-        cache = getattr(shared.opts, 'tagger_hf_cache_dir', Its.hf_cache)
-        # animetimm repositories are gated. None falls back to the HF_TOKEN
-        # environment variable or a token saved by `hf auth login`
-        token = getattr(shared.opts, 'tagger_hf_token', '') or None
         files = {
             'config': 'config.json',
             'preprocess': 'preprocess.json',
@@ -552,6 +547,26 @@ class AnimeTimmInterrogator(Interrogator):
             'tags': self.tags_path,
             'model': self.model_path,
         }
+
+        # manually downloaded files, e.g.
+        # models/TaggerTimm/convnextv2_huge.dbv4-full/model.safetensors
+        local_dir = Path(shared.models_path, 'TaggerTimm',
+                         self.repo_id.split('/')[-1])
+        if local_dir.is_dir():
+            missing = [f for f in files.values()
+                       if not Path(local_dir, f).is_file()]
+            if missing:
+                raise RuntimeError(f'{local_dir} is missing: '
+                                   f'{", ".join(missing)}')
+            print(f"Loading {self.name} model files from {local_dir}")
+            return {key: str(Path(local_dir, filename))
+                    for key, filename in files.items()}
+
+        print(f"Loading {self.name} model file from {self.repo_id}")
+        cache = getattr(shared.opts, 'tagger_hf_cache_dir', Its.hf_cache)
+        # animetimm repositories are gated. None falls back to the HF_TOKEN
+        # environment variable or a token saved by `hf auth login`
+        token = getattr(shared.opts, 'tagger_hf_token', '') or None
         try:
             return {
                 key: hf_hub_download(repo_id=self.repo_id, filename=filename,
