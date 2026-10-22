@@ -43,6 +43,18 @@ Taggerのforkをまた増やしてしまい、申し訳ありません。<BR>
 
 ## 更新履歴
 
+### 2026/10/22
+
+- [animetimm](https://huggingface.co/animetimm) のTagger（AnimeTimmInterrogator）を追加しました。`onnxruntime` ではなく `timm` とPyTorchで動作します。
+   - [animetimm/convnextv2_huge.dbv4-full](https://huggingface.co/animetimm/convnextv2_huge.dbv4-full) をUIとAPIのデフォルトのInterrogatorに変更しました。
+   - `eva02_large_patch14_448`、`caformer_b36`、`swinv2_base_window8_256`（いずれも `dbv4-full`）も利用できます。
+   - `requirements.txt` に `timm>=1.0.3` を追加しました。
+- animetimmのリポジトリはゲート付きです。ダウンロードするには:
+   1. Hugging Faceにログインし、モデルページ（例: [animetimm/convnextv2_huge.dbv4-full](https://huggingface.co/animetimm/convnextv2_huge.dbv4-full)）で利用規約に同意します。
+   1. [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) でアクセストークン（read）を作成します。
+   1. *Settings* -> *Tagger* -> *HuggingFace access token* に入力するか、環境変数 `HF_TOKEN` を設定するか、`hf auth login`（古い `huggingface_hub` では `huggingface-cli login`） を実行します。
+- デフォルトのモデルは大きい（パラメータ数692M、重み約2.8GB）ため、遅い場合やVRAMに収まらない場合は別のInterrogatorを選択してください。
+
 ### 2026/7/11
 
 - `TaggerInterrogateRequest`への`image`フィールドの実装漏れの修正

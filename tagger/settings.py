@@ -131,6 +131,17 @@ def on_ui_settings():
             section=section,
         ),
     )
+    shared.opts.add_option(
+        key='tagger_hf_token',
+        info=shared.OptionInfo(
+            '',
+            label='HuggingFace access token, for gated models such as '
+            'animetimm. Leave blank to use HF_TOKEN or a saved login',
+            section=section,
+            component=gr.Textbox,
+            component_args={'type': 'password'},
+        ),
+    )
 
 
 def split_str(string: str, separator=',') -> List[str]:

@@ -11,11 +11,31 @@ default_onnx_path = Path(models_path, 'TaggerOnnx')
 from tagger.preset import Preset  # pylint: disable=import-error
 from tagger.interrogator import Interrogator, Z3DInterrogator, \
                                 MLDanbooruInterrogator  # pylint: disable=E0401 # noqa: E501
-from tagger.interrogator import WaifuDiffusionInterrogator  # pylint: disable=E0401 # noqa: E501
+from tagger.interrogator import WaifuDiffusionInterrogator, \
+                                AnimeTimmInterrogator  # pylint: disable=E0401 # noqa: E501
 
 preset = Preset(Path(scripts.basedir(), 'presets'))
 
+# interrogator selected by default, in the UI and the API
+DEFAULT_INTERROGATOR = 'animetimm-convnextv2_huge.dbv4-full'
+
 interrogators: Dict[str, Interrogator] = {
+    'animetimm-convnextv2_huge.dbv4-full': AnimeTimmInterrogator(
+        'AnimeTimm ConvNeXtV2 Huge dbv4-full',
+        repo_id='animetimm/convnextv2_huge.dbv4-full'
+    ),
+    'animetimm-eva02_large_patch14_448.dbv4-full': AnimeTimmInterrogator(
+        'AnimeTimm EVA02 Large dbv4-full',
+        repo_id='animetimm/eva02_large_patch14_448.dbv4-full'
+    ),
+    'animetimm-caformer_b36.dbv4-full': AnimeTimmInterrogator(
+        'AnimeTimm CAFormer B36 dbv4-full',
+        repo_id='animetimm/caformer_b36.dbv4-full'
+    ),
+    'animetimm-swinv2_base_window8_256.dbv4-full': AnimeTimmInterrogator(
+        'AnimeTimm SwinV2 Base dbv4-full',
+        repo_id='animetimm/swinv2_base_window8_256.dbv4-full'
+    ),
     'wd14-vit.v1': WaifuDiffusionInterrogator(
         'WD14 ViT v1',
         repo_id='SmilingWolf/wd-v1-4-vit-tagger'
