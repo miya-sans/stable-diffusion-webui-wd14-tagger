@@ -53,6 +53,7 @@ After migrating from another Tagger to this one, you can remove them using `pip 
    1. Log in to Hugging Face and accept the terms on the model page, e.g. [animetimm/convnextv2_huge.dbv4-full](https://huggingface.co/animetimm/convnextv2_huge.dbv4-full).
    1. Create an access token (read) at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
    1. Enter it in *Settings* -> *Tagger* -> *HuggingFace access token*, or set the `HF_TOKEN` environment variable, or run `hf auth login` (`huggingface-cli login` on older versions of `huggingface_hub`).
+- If you already downloaded an animetimm model, put its files in `models/TaggerTimm/<model name>/`, e.g. `models/TaggerTimm/convnextv2_huge.dbv4-full/` with `config.json`, `preprocess.json`, `categories.json`, `selected_tags.csv` and `model.safetensors` (keep the original file names). No token or download is needed then.
 - The default model is large (692M parameters, about 2.8 GB of weights); choose another interrogator if it is too slow or does not fit in your VRAM.
 
 ### 2026/7/10

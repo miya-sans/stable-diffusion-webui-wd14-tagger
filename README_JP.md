@@ -53,6 +53,7 @@ Taggerのforkをまた増やしてしまい、申し訳ありません。<BR>
    1. Hugging Faceにログインし、モデルページ（例: [animetimm/convnextv2_huge.dbv4-full](https://huggingface.co/animetimm/convnextv2_huge.dbv4-full)）で利用規約に同意します。
    1. [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) でアクセストークン（read）を作成します。
    1. *Settings* -> *Tagger* -> *HuggingFace access token* に入力するか、環境変数 `HF_TOKEN` を設定するか、`hf auth login`（古い `huggingface_hub` では `huggingface-cli login`） を実行します。
+- animetimmのモデルをダウンロード済みの場合は、`models/TaggerTimm/<モデル名>/`（例: `models/TaggerTimm/convnextv2_huge.dbv4-full/`）に `config.json`、`preprocess.json`、`categories.json`、`selected_tags.csv`、`model.safetensors` を元のファイル名のまま置いてください。その場合トークンやダウンロードは不要です。
 - デフォルトのモデルは大きい（パラメータ数692M、重み約2.8GB）ため、遅い場合やVRAMに収まらない場合は別のInterrogatorを選択してください。
 
 ### 2026/7/11
