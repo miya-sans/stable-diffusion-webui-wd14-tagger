@@ -43,6 +43,11 @@ After migrating from another Tagger to this one, you can remove them using `pip 
 
 ## Changelog
 
+### 2026/10/22 (2)
+
+- OpenCV is no longer in `requirements.txt`. `install.py` installs `opencv_python<4.12` only when no OpenCV is installed, and otherwise uses the WebUI's own.
+   - Forge Neo 2.31 pins `opencv-python==5.0.0.93`, so the old `<4.12` lines made every launch try to downgrade it, which fails while `cv2.pyd` is in use.
+
 ### 2026/10/22
 
 - *Send to txt2img* / *Send to img2img* now only replace the prompt; the sampling method, schedule type, negative prompt and other settings are kept.
