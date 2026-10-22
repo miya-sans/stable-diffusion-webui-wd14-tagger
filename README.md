@@ -45,6 +45,8 @@ After migrating from another Tagger to this one, you can remove them using `pip 
 
 ### 2026/10/22
 
+- *Send to txt2img* / *Send to img2img* now only replace the prompt; the sampling method, schedule type, negative prompt and other settings are kept.
+- A pasted or selected image is interrogated automatically only when the selected interrogator is already loaded. Otherwise press *Interrogate*, which loads the model.
 - Added the [animetimm](https://huggingface.co/animetimm) taggers (AnimeTimmInterrogator), which run with `timm` and PyTorch instead of `onnxruntime`.
    - [animetimm/convnextv2_huge.dbv4-full](https://huggingface.co/animetimm/convnextv2_huge.dbv4-full) is now the default interrogator, in the UI and in the API.
    - Also available: `eva02_large_patch14_448`, `caformer_b36` and `swinv2_base_window8_256` (all `dbv4-full`).

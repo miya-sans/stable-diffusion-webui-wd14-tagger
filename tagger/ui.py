@@ -55,6 +55,13 @@ def unload_interrogators() -> Tuple[str]:
     return (f'{unloaded_models} model(s) unloaded{remaining_models}',)
 
 
+def prompt_field(tabname: str) -> Optional[gr.Textbox]:
+    """ the prompt textbox of the txt2img or img2img tab """
+    fields = parameters_copypaste.paste_fields.get(tabname, {}).get('fields')
+    return next((field for field, name in fields or [] if name == 'Prompt'),
+                None)
+
+
 def on_interrogate(
     input_glob: str, output_dir: str, name: str, filt: str, *args
 ) -> COMMON_OUTPUT:
@@ -86,12 +93,16 @@ def on_gallery() -> List:
     return QData.get_image_dups()
 
 
-def on_interrogate_image(*args) -> COMMON_OUTPUT:
-    # hack brcause image interrogaion occurs twice
-    It.odd_increment = It.odd_increment + 1
-    if It.odd_increment & 1 == 1:
+def on_interrogate_image(image: Image, name: str, *args) -> COMMON_OUTPUT:
+    """ interrogates a new image right away if the interrogator is loaded,
+    loading a model on every paste would stall the UI """
+    if image is None:
         return (None,) * 6 + ('',)
-    return on_interrogate_image_submit(*args)
+    interrogator: It = next((i for i in utils.interrogators.values() if
+                             i.name == name), None)
+    if interrogator is None or interrogator.model is None:
+        return (None,) * 6 + ('Press Interrogate to load the model',)
+    return on_interrogate_image_submit(image, name, *args)
 
 
 def on_interrogate_image_submit(
@@ -523,11 +534,24 @@ def on_ui_tabs():
                                 with gr.Row():
                                     buttons = parameters_copypaste.create_buttons(["txt2img", "img2img"])
                                     for tabname, button in buttons.items():
+                                        prompt = prompt_field(tabname)
+                                        # set only the prompt. Pasted as infotext the
+                                        # tags would reset the sampler, schedule type
+                                        # and other settings to their defaults.
+                                        if prompt is not None:
+                                            button.click(
+                                                fn=lambda new, old: new or old,
+                                                inputs=[tags, prompt],
+                                                outputs=[prompt],
+                                                show_progress=False
+                                            )
                                         parameters_copypaste.register_paste_params_button(
                                             parameters_copypaste.ParamBinding(
                                                 paste_button=button,
                                                 tabname=tabname,
-                                                source_text_component=tags,
+                                                source_text_component=(
+                                                    None if prompt is not None
+                                                    else tags),
                                                 source_image_component=None
                                             )
                                         )

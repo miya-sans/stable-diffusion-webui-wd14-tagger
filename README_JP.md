@@ -45,6 +45,8 @@ Taggerのforkをまた増やしてしまい、申し訳ありません。<BR>
 
 ### 2026/10/22
 
+- *Send to txt2img* / *Send to img2img* はプロンプトのみを置き換えるようにしました。サンプリング方法、スケジュールタイプ、ネガティブプロンプトなどの設定は変更されません。
+- 画像を貼り付け・選択した際の自動Interrogateは、選択中のInterrogatorが読み込み済みの場合のみ行います。未読み込みの場合は *Interrogate* を押すとモデルが読み込まれます。
 - [animetimm](https://huggingface.co/animetimm) のTagger（AnimeTimmInterrogator）を追加しました。`onnxruntime` ではなく `timm` とPyTorchで動作します。
    - [animetimm/convnextv2_huge.dbv4-full](https://huggingface.co/animetimm/convnextv2_huge.dbv4-full) をUIとAPIのデフォルトのInterrogatorに変更しました。
    - `eva02_large_patch14_448`、`caformer_b36`、`swinv2_base_window8_256`（いずれも `dbv4-full`）も利用できます。
