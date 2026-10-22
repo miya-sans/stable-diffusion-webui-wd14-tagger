@@ -77,7 +77,6 @@ class Interrogator:
         "output_dir": '',
     }
     output = None
-    odd_increment = 0
 
     @classmethod
     def flip(cls, key):
